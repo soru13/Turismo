@@ -2,7 +2,7 @@ var ajax=(function($){
 
       function started(){
         var _photo_uri;
-        var imgur_client_id = "c413dc419d9130d";
+        var imgur_client_id = "1841367133e3c0151755f5632959b990";
         var instagram_client_id = "fc8041d4af1544a2939c3f5a9a1ef8cf";
 
         function getPhotos() {          
@@ -16,7 +16,7 @@ var ajax=(function($){
             }
 
             if (tag == "") {
-                tag = "food";
+                tag = "coffe";
             }
 
             tag = tag.replace(/(#| )/g,"");
@@ -166,7 +166,7 @@ var app = {
     // Bind any events that are required on startup. Common events are:
     // 'load', 'deviceready', 'offline', and 'online'.
     bindEvents: function() {
-         ajax.inicio();
+         
         document.addEventListener('deviceready', this.onDeviceReady, false);
     },
     // deviceready Event Handler
