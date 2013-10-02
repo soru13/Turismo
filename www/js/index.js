@@ -1,9 +1,30 @@
 var ajax=(function($){
 
-      function started(){
         var _photo_uri;
         var imgur_client_id = "1841367133e3c0151755f5632959b990";
         var instagram_client_id = "fc8041d4af1544a2939c3f5a9a1ef8cf";
+      function started(){
+
+        $("#map").live("pagecreate", function() {           
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    locationSuccess,locationError,
+                    {enableHighAccuracy: true });
+            }  
+        });
+
+        $("#list").live("pageshow", function() {
+            getPhotos();
+        });
+        
+        $(document).on('click', '[data-role="navbar"] a', function () {
+            $.mobile.changePage($(this).attr("data-href"), {
+                transition: "none",
+                changeHash: false
+            });         
+            return false;
+        });
+      }
 
         function getPhotos() {          
             var map_visible = $("#map").is(':visible');
@@ -16,23 +37,28 @@ var ajax=(function($){
             }
 
             if (tag == "") {
-                tag = "coffe";
+                tag = "instafood";
             }
 
             tag = tag.replace(/(#| )/g,"");
 
             $(".search-button").addClass('ui-disabled');
             $(".result-count").html("cargando...");
-
             if (map_visible) {
+                $.mobile.loading( 'show');
                 $('#map_canvas').gmap('clear', 'markers');
             } else if (list_visible) {
+                $.mobile.loading( 'show', {
+                    text: 'Cargando Instagram',
+                    textVisible: true,
+                    theme: 'b'
+                });
                 $("#element_list").empty();
             }
 
             var url = "https://api.instagram.com/v1/tags/" + tag + "/media/recent?client_id=" + instagram_client_id + "&callback=?";
-
-            $.getJSON(url, function(data){              
+            
+            $.getJSON(url, function(data) {
                 var data_elements = data["data"];
                 var showing = 0;
                 $.each(data_elements, function(index, current_element) {
@@ -68,14 +94,20 @@ var ajax=(function($){
                         );
                     }
                 });
-
                 if (list_visible) {
                     $("#element_list").listview("refresh");
-                }
+                    $.mobile.loading( 'hide');
+                }else if (map_visible) {
+
+                    $.mobile.loading( 'hide');
+                };
                 $(".search-button").removeClass('ui-disabled');
                 $(".result-count").html("Mostrando " + showing + " resultados para #" + tag);
-            });             
+            });
+            
+
         }
+
 
         function takePhoto() {
             var opts = { 
@@ -115,75 +147,58 @@ var ajax=(function($){
         function locationSuccess(position){         
             var lat = position.coords.latitude;                     
             var lng = position.coords.longitude;    
-            $('#map_canvas').gmap({ 'center': new google.maps.LatLng(lat, lng), 'zoom': 11});
+            $('#map_canvas').gmap({ 'center': new google.maps.LatLng(lat, lng), 'zoom': 5});
             getPhotos();
         }
         
         function locationError(error) {
+              $.mobile.loading( 'show', {
+                    text: 'no es culpa tuya es nuestra intentalo conectado a internet',
+                    textVisible: true,
+                    theme: 'd'
+                });
             $('#map_canvas').gmap({'zoom': 2});
             getPhotos();
         }
 
-        $("#map").live("pagecreate", function() {           
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    locationSuccess,locationError,
-                    {enableHighAccuracy: true });
-            }   
-        });
 
-        $("#list").live("pageshow", function() {
-            getPhotos();
-        });
-        
-        $(document).on('click', '[data-role="navbar"] a', function () {
-            $.mobile.changePage($(this).attr("data-href"), {
-                transition: "none",
-                changeHash: false
-            });         
-            return false;
-        });
-      }
 
 
 
 
 
   return{
-    inicio:started
+    inicio:started,
+    cargarFotos:getPhotos
   }
-
+              
 })(jQuery);
 
-var app = {
-    // Application Constructor
-    initialize: function() {
+(function() {
 
-        this.bindEvents();
-    },
-    // Bind Event Listeners
-    //
-    // Bind any events that are required on startup. Common events are:
-    // 'load', 'deviceready', 'offline', and 'online'.
-    bindEvents: function() {
-         
-        document.addEventListener('deviceready', this.onDeviceReady, false);
-    },
-    // deviceready Event Handler
-    //
-    // The scope of 'this' is the event. In order to call the 'receivedEvent'
-    // function, we must explicity call 'app.receivedEvent(...);'
-    onDeviceReady: function() {
-         
-        app.receivedEvent('deviceready');
-    },
-    // Update DOM on a Received Event
-    receivedEvent: function(id) {
-        var parentElement = document.getElementById(id);
-        var listeningElement = parentElement.querySelector('.listening');
-        var receivedElement = parentElement.querySelector('.received');
-        listeningElement.setAttribute('style', 'display:none;');
-        receivedElement.setAttribute('style', 'display:block;');
-        console.log('Received Event: ' + id);
-    }
-};
+    
+    ajax.inicio();
+      $(document).on('click', 'a,[data-role="listview"] a,[data-role="navbar"] a', function () {
+              $.mobile.changePage($(this).attr("data-href"), {
+                    transition: "none",
+                    changeHash: false
+              }); 
+            return false;
+        });
+    $(document).on("pageloadfailed", function(event, data){
+        event.preventDefault();
+
+        var errMessage = data.xhr.status + " " + data.xhr.statusText;
+
+        setTimeout(function(){
+            $.mobile.loading('hide');
+            $.mobile.loading('show', {theme:"e", text:errMessage, textonly:true, textVisible: true});
+        },50);
+
+        setTimeout(function(){$.mobile.loading('hide')}, 2000);
+
+        data.deferred.reject(data.absUrl, data.options);
+    });
+}).call(this);
+
+
